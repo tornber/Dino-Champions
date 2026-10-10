@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Team Play 5v5</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:system-ui,Arial,sans-serif;color:#fff;user-select:none}
+#c{width:100%;height:100%;display:block;outline:none}
+#top{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0009;padding:6px 18px;border-radius:8px;font-size:20px;white-space:nowrap}
+#top .b{color:#5aa0ff}#top .r{color:#ff6a60}#top i{margin:0 14px;font-style:normal;opacity:.9}
+#feed{position:fixed;top:10px;right:12px;text-align:right;font-size:14px;text-shadow:0 1px 2px #000}
+#hp,#am{position:fixed;bottom:16px;font-size:34px;font-weight:700;text-shadow:0 2px 4px #000}
+#hp{left:20px}#am{right:20px}
+#xh{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:26px;color:#fff;text-shadow:0 0 3px #000;pointer-events:none}
+#dmg{position:fixed;inset:0;background:radial-gradient(transparent 40%,#f00);opacity:0;pointer-events:none}
+#msg{position:fixed;top:40%;width:100%;text-align:center;font-size:30px;text-shadow:0 2px 4px #000;pointer-events:none}
+#menu{position:fixed;inset:0;background:#000b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+#menu h1{margin:0;font-size:44px}#menu p{margin:0;opacity:.8;max-width:520px;line-height:1.5}
+#menu button{padding:12px 36px;font-size:20px;border:0;border-radius:8px;background:#ffb020;cursor:pointer;font-weight:700}
+#menu table{border-collapse:collapse;min-width:300px}#menu td,#menu th{padding:3px 12px}
+.t0{color:#5aa0ff}.t1{color:#ff6a60}
+#mini{position:fixed;top:12px;left:12px;border-radius:50%;background:#0007;border:2px solid #fff6}
+#tab{display:none;position:fixed;top:18%;left:50%;transform:translateX(-50%);background:#000c;padding:14px 20px;border-radius:10px}
+#menu select{padding:8px;font-size:16px;margin-left:8px}
+</style></head><body>
+<canvas id="c" tabindex="0"></canvas>
+<div id="top"></div><div id="feed"></div><div id="hp"></div><div id="am"></div>
+<canvas id="mini" width="140" height="140"></canvas><div id="tab"></div><div id="xh">+</div><div id="dmg"></div><div id="msg"></div>
+<div id="menu"><h1 id="mt"></h1><p id="ms"></p><div id="sb"></div><label>Bot difficulty <select id="df"><option value="0.6">Easy</option><option value="1" selected>Normal</option><option value="1.5">Hard</option></select></label><button id="go"></button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babylonjs/7.0.0/babylon.js"></script>
+<script>
+// ===== CONFIG (edit freely) =====
+const CFG={teamSize:5,roundsToWin:5,roundTime:90};
+
+const V3=BABYLON.Vector3,C3=BABYLON.Color3,$=id=>document.getElementById(id);
+const R=.4,H=1.8,EYE=1.6,TEAM=['BLUE','RED'],COL=[new C3(.2,.45,1),new C3(1,.25,.2)];
+const canvas=$('c'),engine=new BABYLON.Engine(canvas,true),scene=new BABYLON.Scene(engine);
+scene.clearColor=new BABYLON.Color4(.6,.78,.95,1);
+scene.fogMode=BABYLON.Scene.FOGMODE_LINEAR;scene.fogStart=50;scene.fogEnd=130;scene.fogColor=new C3(.6,.78,.95);
+new BABYLON.HemisphericLight('h',new V3(0,1,0),scene).intensity=.7;
+const sun=new BABYLON.DirectionalLight('d',new V3(-.5,-1,-.35),scene);sun.intensity=.8;
+const sg=new BABYLON.ShadowGenerator(1024,sun);sg.useBlurExponentialShadowMap=true;sg.blurKernel=10;
+const cam=new BABYLON.FreeCamera('cam',new V3(0,EYE,0),scene);cam.minZ=.05;cam.fov=1.25;cam.inputs.clear();
+
+const mat=(c,s=0)=>{const m=new BABYLON.StandardMaterial('m',scene);m.diffuseColor=c;m.specularColor=new C3(s,s,s);return m};
+
+const emis=c=>{const m=mat(c);m.emissiveColor=c;return m};
+const mRed=emis(new C3(.9,.1,.1)),mSp=emis(new C3(1,.85,.4));
+// ===== MAP =====
+const solids=[];
+function box(x,z,w,d,h,c){
+  const m=BABYLON.MeshBuilder.CreateBox('w',{width:w,height:h,depth:d},scene);
+  m.position.set(x,h/2,z);m.material=c;m.isWall=true;m.receiveShadows=true;sg.addShadowCaster(m);
+  solids.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y1:h});
+}
+{
+  const gr=BABYLON.MeshBuilder.CreateGround('g',{width:90,height:90},scene);gr.isWall=true;gr.receiveShadows=true;
+  const tx=new BABYLON.DynamicTexture('t',256,scene),cx=tx.getContext();
+  cx.fillStyle='#8a8068';cx.fillRect(0,0,256,256);cx.strokeStyle='#6f6753';cx.lineWidth=4;cx.strokeRect(0,0,256,256);tx.update();
+  tx.uScale=tx.vScale=22;const gm=mat(C3.White);gm.diffuseTexture=tx;gr.material=gm;
+  const wall=mat(new C3(.45,.47,.5)),block=mat(new C3(.55,.5,.45)),crate=mat(new C3(.6,.42,.2));
+  box(0,-40.5,82,1,4,wall);box(0,40.5,82,1,4,wall);box(-40.5,0,1,80,4,wall);box(40.5,0,1,80,4,wall);
+  box(0,0,8,8,3,block);
+  box(-18,-8,10,2,3,block);box(18,8,10,2,3,block);box(-18,12,2,10,3,block);box(18,-12,2,10,3,block);
+  [[-8,-20],[8,-20],[-8,20],[8,20],[0,-14],[0,14],[-28,0],[28,0],[-30,-25],[30,25],[-30,25],[30,-25],[-4,-6],[4,6]]
+    .forEach(([x,z])=>box(x,z,2,2,1,crate));
+}
+
+// ===== PHYSICS =====
+function hit(e){
+  for(const s of solids)
+    if(e.p.x+R>s.x0&&e.p.x-R<s.x1&&e.p.z+R>s.z0&&e.p.z-R<s.z1&&e.p.y<s.y1-.31)return true;
+  return false;
+}
+function phys(e,dx,dz,dt){
+  const ox=e.p.x,oz=e.p.z;
+  e.p.x+=dx;if(hit(e))e.p.x=ox;
+  e.p.z+=dz;if(hit(e))e.p.z=oz;
+  e.vy-=22*dt;e.p.y+=e.vy*dt;
+  let g=0;
+  for(const s of solids)
+    if(e.p.x+R>s.x0&&e.p.x-R<s.x1&&e.p.z+R>s.z0&&e.p.z-R<s.z1&&s.y1<=e.p.y+.31)g=Math.max(g,s.y1);
+  e.ground=false;
+  if(e.p.y<=g){e.p.y=g;if(e.vy<0)e.vy=0;e.ground=true}
+  return Math.abs(e.p.x-ox)+Math.abs(e.p.z-oz)>(Math.hypot(dx,dz)*.3);
+}
+
+// ===== ENTITIES =====
+const ents=[];let P;
+function makeGun(t,par,hide){
+  const n=new BABYLON.TransformNode('g',scene);n.parent=par;
+  const M=(w,h,d,x,y,z,c,rx=0)=>{const m=BABYLON.MeshBuilder.CreateBox('g',{width:w,height:h,depth:d},scene);m.parent=n;m.position.set(x,y,z);m.rotation.x=rx;m.material=c;m.isPickable=false;if(hide)m.layerMask=0x10000000};
+  const Y=(r,l,x,y,z,c)=>{const m=BABYLON.MeshBuilder.CreateCylinder('g',{diameter:r,height:l,tessellation:10},scene);m.parent=n;m.rotation.x=Math.PI/2;m.position.set(x,y,z);m.material=c;m.isPickable=false;if(hide)m.layerMask=0x10000000};
+  const steel=mat(new C3(.1,.1,.11),.4),blk=mat(new C3(.04,.04,.045)),wood=mat(new C3(.4,.2,.08));
+  if(t){ // AK-47: wood furniture, curved magazine, gas tube
+    M(.06,.09,.32,0,0,0,steel);Y(.024,.42,0,.015,.36,steel);Y(.03,.14,0,.06,.3,steel);
+    M(.058,.06,.24,0,-.005,.24,wood);M(.05,.2,.07,0,-.15,.07,steel,.4);M(.05,.11,.26,0,-.01,-.29,wood);M(.04,.11,.05,0,-.1,-.1,wood,-.3);M(.012,.03,.012,0,.05,.55,steel);
+  }else{ // M4A1: black polymer, rail, straight magazine, collapsible stock
+    M(.055,.085,.3,0,0,0,blk);M(.03,.04,.24,0,.062,0,blk);Y(.022,.34,0,.01,.33,blk);Y(.05,.2,0,0,.22,blk);Y(.03,.05,0,.01,.52,blk);
+    M(.045,.17,.06,0,-.13,.05,blk,.1);M(.05,.09,.18,0,-.01,-.24,blk);Y(.035,.1,0,.005,-.14,blk);M(.04,.1,.05,0,-.1,-.1,blk,-.3);
+  }
+  return n;
+}
+function build(e){
+  const r=new BABYLON.TransformNode('r',scene);e.root=r;const h=!e.bot;
+  const uni=mat(e.team?new C3(.5,.33,.17):new C3(.2,.3,.5)),dk=mat(new C3(.1,.1,.11)),skin=mat(new C3(.85,.65,.5)),pant=mat(e.team?new C3(.25,.2,.12):new C3(.1,.12,.2));
+  const B=(w,hh,d,x,y,z,m,head,rx=0)=>{const b=BABYLON.MeshBuilder.CreateBox('b',{width:w,height:hh,depth:d},scene);b.parent=r;b.position.set(x,y,z);b.rotation.x=rx;b.material=m;b.meta={e,head:!!head};sg.addShadowCaster(b);if(h)b.layerMask=0x10000000;return b};
+  B(.46,.55,.26,0,1.2,0,uni);B(.5,.4,.3,0,1.24,0,dk);B(.42,.2,.24,0,.88,0,pant);
+  [-1,1].forEach(s=>B(.1,.42,.1,s*.27,1.2,.2,uni,0,1.4));
+  const hd=BABYLON.MeshBuilder.CreateSphere('h',{diameter:.24},scene);hd.parent=r;hd.position.y=1.64;hd.material=skin;hd.meta={e,head:true};
+  const hm=BABYLON.MeshBuilder.CreateSphere('hm',{diameter:.31},scene);hm.parent=r;hm.position.y=1.69;hm.scaling.y=.7;hm.material=dk;hm.meta={e,head:true};
+  if(h){hd.layerMask=0x10000000;hm.layerMask=0x10000000}
+  sg.addShadowCaster(hd);
+  e.legs=[-1,1].map(s=>{const l=B(.17,.55,.2,s*.12,.3,0,pant);l.setPivotPoint(new V3(0,.27,0));return l});
+  const g=makeGun(e.team,r,h);g.position.set(.1,1.17,.45);
+}
+function mk(name,team,bot){
+  const e={name,team,bot,hp:100,alive:true,p:new V3(),vy:0,yaw:0,kills:0,deaths:0,cd:0,rt:0,sd:1,st:0,tgt:null,lt:0,wp:null};
+  build(e);
+  ents.push(e);return e;
+}
+const names=['Rex','Blue','Spike','Raptor','Claw','Tank','Ptera','Bronto','Ziggy','Fang'];
+P=mk('You',0,false);
+// Real players fill team slots first; bots fill the rest (5 per team). Networking hook: pass the humans list.
+function fillSlots(humans){const n=[0,0];humans.forEach(h=>n[h.team]++);for(let t=0;t<2;t++)for(let i=n[t];i<CFG.teamSize;i++)mk(names[ents.length%names.length]+ents.length,t,true)}
+fillSlots([P]);
+
+function spawn(e){
+  const z=e.team?34:-34;let n=0;
+  do{e.p.set((Math.random()-.5)*30,0,z+(Math.random()-.5)*4)}while(hit(e)&&n++<20);
+  e.vy=0;e.hp=100;e.alive=true;e.yaw=e.team?Math.PI:0;e.tgt=null;e.cd=.5;e.wp=null;
+  e.root.setEnabled(true);if(!e.bot){pitch=0;wi=0;ammo=W[0].mag;reload=0}
+}
+
+// ===== STATE =====
+let state='menu',score=[0,0],pitch=0,ammo=30,reload=0,firing=false,hm=0,dmgT=0,kick=0;
+const keys={},feed=[];
+let mags=[],wi=0,aim=false,flash=0,tp=false,rs='live',rtm=0,rt0=90,rmsg='';
+const W=[{n:'M4A1',d:25,hd:60,rate:.088,mag:30,rel:1.7,pel:1,sp:.01,rc:1},{n:'AK-47',d:30,hd:75,rate:.105,mag:30,rel:2,pel:1,sp:.016,rc:1.8}]; // index = team
+
+function reset(){
+  score=[0,0];rs='live';rt0=CFG.roundTime;feed.length=0;
+  for(const e of ents){e.kills=e.deaths=0;spawn(e)}
+}
+
+// ===== AUDIO (tiny synth) =====
+let AC;
+function snd(f,d,v,t='sawtooth'){try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;
+  o.type=t;o.frequency.setValueAtTime(f,n);o.frequency.exponentialRampToValueAtTime(40,n+d);
+  g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g).connect(AC.destination);o.start();o.stop(n+d)}catch(x){}}
+
+// ===== COMBAT =====
+function tracer(a,b,c){
+  const l=BABYLON.MeshBuilder.CreateLines('t',{points:[a,b]},scene);l.color=c;l.isPickable=false;
+  setTimeout(()=>l.dispose(),45);
+}
+function fireRay(o,d,sh,dB=25,dH=60){
+  const pk=scene.pickWithRay(new BABYLON.Ray(o,d,120),m=>m.isWall||(m.meta&&m.meta.e!==sh&&m.meta.e.alive));
+  const end=pk.hit?pk.pickedPoint:o.add(d.scale(120));
+  tracer(o.add(d.scale(.9)).add(new V3(0,sh===P?-.15:-.2,0)),end,new C3(1,.9,.4));
+  if(pk.hit){const hv=pk.pickedMesh.meta,sp=BABYLON.MeshBuilder.CreateSphere('s',{diameter:hv?0.22:0.12},scene);sp.position.copyFrom(pk.pickedPoint);sp.isPickable=false;sp.material=hv?mRed:mSp;setTimeout(()=>sp.dispose(),130)}
+  if(pk.hit&&pk.pickedMesh.meta){
+    const {e,head}=pk.pickedMesh.meta;
+    if(e.team!==sh.team){
+      let dm=head?dH:dB;if(sh.bot)dm*=.45*CFG.diff;
+      damage(e,Math.round(dm),sh,head);
+      if(sh===P){hm=.15;snd(900,.05,.1,'square')}
+    }
+  }
+}
+function damage(v,amt,by,head){
+  if(!v.alive||state!=='play'||rs!=='live')return;
+  v.hp-=amt;
+  if(v===P)dmgT=.6;
+  if(v.hp>0)return;
+  v.alive=false;v.hp=0;v.deaths++;by.kills++;
+  if(by===P){try{window.parent.postMessage({type:'tdm-score',points:1},window.location.origin)}catch(_){}}
+  if(v.root)v.root.setEnabled(false);
+  feed.push({t:performance.now(),h:`<b class="t${by.team}">${by.name}</b> ▸ ${head?'⌖ ':''}<b class="t${v.team}">${v.name}</b>`});
+  checkRound();
+}
+function shoot(){
+  const w=W[wi];
+  if(!P.alive||ammo<=0||reload>0||P.cd>0)return;
+  P.cd=w.rate;ammo--;pitch-=.006*w.rc*(aim?.5:1);kick=.06;flash=.05;snd(w.pel>1?150:w.d>50?110:300,.12,.18);
+  const sp=w.sp*(aim?.2:1)+(P.ground?0:.03),o=new V3(P.p.x,P.p.y+EYE,P.p.z);
+  for(let i=0;i<w.pel;i++){
+    const r=()=>(Math.random()-.5)*sp;
+    fireRay(o,new V3(Math.sin(P.yaw)*Math.cos(pitch)+r(),-Math.sin(pitch)+r(),Math.cos(P.yaw)*Math.cos(pitch)+r()).normalize(),P,w.d,w.hd);
+  }
+  if(ammo===0)reload=w.rel;
+}
+
+// ===== BOT AI =====
+const ad=(a,b)=>((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+function los(a,b){
+  const f=new V3(a.p.x,a.p.y+1.5,a.p.z),t=new V3(b.p.x,b.p.y+1.2,b.p.z),d=t.subtract(f),l=d.length();
+  return !scene.pickWithRay(new BABYLON.Ray(f,d.normalize(),l),m=>m.isWall).hit;
+}
+function updBot(e,dt){
+  if(!e.alive)return;
+  e.cd-=dt;e.lt-=dt;e.st-=dt;
+  if(e.tgt&&!e.tgt.alive)e.tgt=null;
+  if(e.lt<=0){
+    e.lt=.3+Math.random()*.2;let best=null,bd=45;
+    for(const o of ents)if(o.alive&&o.team!==e.team){
+      const d=Math.hypot(o.p.x-e.p.x,o.p.z-e.p.z);
+      if(d<bd&&los(e,o)){bd=d;best=o}
+    }
+    if(best&&!e.tgt)e.cd=Math.max(e.cd,.5);
+    e.tgt=best;
+  }
+  let mx=0,mz=0;const sp=4.5;
+  if(e.tgt){
+    const dx=e.tgt.p.x-e.p.x,dz=e.tgt.p.z-e.p.z,d=Math.hypot(dx,dz)||1,want=Math.atan2(dx,dz);
+    e.yaw+=ad(e.yaw,want)*Math.min(1,dt*7);
+    if(e.st<=0){e.sd=Math.random()<.5?-1:1;e.st=.8+Math.random()*1.5}
+    const adv=d>16?1:d<7?-.6:0,fx=dx/d,fz=dz/d;
+    mx=fx*adv+fz*e.sd*.8;mz=fz*adv-fx*e.sd*.8;
+    if(e.cd<=0&&Math.abs(ad(e.yaw,want))<.25){
+      e.cd=.25+Math.random()*.25;
+      const f=new V3(e.p.x,e.p.y+1.5,e.p.z),t=new V3(e.tgt.p.x,e.tgt.p.y+(Math.random()<.2?1.55:1.1),e.tgt.p.z);
+      const dir=t.subtract(f).normalize(),er=(.02+.0012*d)/CFG.diff;
+      dir.x+=(Math.random()-.5)*er*2;dir.y+=(Math.random()-.5)*er*2;dir.z+=(Math.random()-.5)*er*2;
+      fireRay(f,dir.normalize(),e,W[e.team].d,W[e.team].hd);
+      if(d<30)snd(200,.08,.03);
+    }
+  }else{
+    if(!e.wp||e.st<=0||Math.hypot(e.wp.x-e.p.x,e.wp.z-e.p.z)<2){
+      e.wp={x:(Math.random()-.5)*70,z:(Math.random()-.5)*70};e.st=4+Math.random()*4;
+    }
+    const dx=e.wp.x-e.p.x,dz=e.wp.z-e.p.z,d=Math.hypot(dx,dz)||1;
+    e.yaw+=ad(e.yaw,Math.atan2(dx,dz))*Math.min(1,dt*5);
+    mx=dx/d;mz=dz/d;
+  }
+  const n=Math.hypot(mx,mz)||1,moved=phys(e,mx/n*sp*dt,mz/n*sp*dt,dt);
+  if(!moved&&(mx||mz)){e.st=0;e.sd*=-1;e.wp=null;if(e.ground&&Math.random()<.15)e.vy=7.5}
+  e.legs.forEach((l,i)=>l.rotation.x=moved?Math.sin(performance.now()/110)*.7*(i?1:-1):0);
+  e.root.position.copyFrom(e.p);e.root.rotation.y=e.yaw;
+}
+
+// ===== PLAYER =====
+function updPlayer(dt){
+  P.cd-=dt;
+  if(!P.alive)return;
+  const f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0),l=Math.hypot(f,s)||1,sp=keys.ShiftLeft?3:6;
+  const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
+  phys(P,(sy*f+cy*s)/l*sp*dt,(cy*f-sy*s)/l*sp*dt,dt);
+  if(keys.Space&&P.ground)P.vy=7.5;
+  if(reload>0){reload-=dt;if(reload<=0){ammo=W[wi].mag;reload=0}}
+  if(firing)shoot();
+  }
+
+// ===== HUD / FLOW =====
+const board=()=>[...ents].sort((a,b)=>b.kills-a.kills).map(e=>`<tr class="t${e.team}"><td>${e.name}<td>${e.kills}<td>${e.deaths}</tr>`).join('');
+function minimap(){
+  const m=$('mini').getContext('2d'),c=Math.cos(P.yaw),s=Math.sin(P.yaw);m.clearRect(0,0,140,140);
+  for(const e of ents){
+    if(!e.alive||e===P||(e.team&&!ents.some(a=>a.team===0&&a.tgt===e)))continue;
+    const dx=e.p.x-P.p.x,dz=e.p.z-P.p.z,x=70+(dx*c-dz*s)*1.6,y=70-(dx*s+dz*c)*1.6;
+    if(Math.hypot(x-70,y-70)>66)continue;
+    m.fillStyle=e.team?'#ff6a60':'#5aa0ff';m.beginPath();m.arc(x,y,4,0,6.3);m.fill();
+  }
+  m.fillStyle='#fff';m.beginPath();m.moveTo(70,62);m.lineTo(65,75);m.lineTo(75,75);m.fill();
+}
+const alive=t=>ents.filter(e=>e.team===t&&e.alive).length;
+function checkRound(w){
+  if(rs!=='live')return;
+  if(w===undefined){const a=alive(0),b=alive(1);if(a&&b)return;w=a?0:b?1:-1}
+  rs='between';rtm=4;rmsg=w<0?'ROUND DRAW':TEAM[w]+' WINS THE ROUND';
+  if(w>=0&&++score[w]>=CFG.roundsToWin)endMatch(w);
+}
+function newRound(){rs='live';rt0=CFG.roundTime;for(const e of ents)spawn(e)}
+let lastTop='';
+function hud(dt){
+  const m=Math.max(0,Math.ceil(rt0)),t=`<b class="t0">BLUE ${score[0]} [${alive(0)}]</b><i>${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}</i><b class="t1">[${alive(1)}] ${score[1]} RED</b>`;
+  if(t!==lastTop){$('top').innerHTML=t;lastTop=t}
+  $('hp').textContent='❤ '+Math.ceil(P.hp);
+  $('am').textContent=W[wi].n+'  '+(reload>0?'RELOADING…':ammo+' / '+W[wi].mag);
+  $('xh').style.color=hm>0?'#f33':'#fff';$('xh').textContent='+';minimap();
+  $('tab').style.display=keys.Tab?'block':'none';if(keys.Tab)$('tab').innerHTML='<table><tr><th>Player<th>K<th>D</tr>'+board()+'</table>';
+  $('dmg').style.opacity=Math.max(0,dmgT);
+  $('msg').textContent=rs==='between'?rmsg:(P.alive?'':'ELIMINATED – spectating');
+  const now=performance.now();while(feed.length&&now-feed[0].t>5000)feed.shift();
+  $('feed').innerHTML=feed.slice(-5).map(x=>x.h).join('<br>');
+  hm-=dt;dmgT-=dt*1.5;
+}
+function showMenu(t,s,b,sb=''){$('mt').textContent=t;$('ms').textContent=s;$('sb').innerHTML=sb;$('go').textContent=b;$('menu').style.display='flex'}
+function endMatch(w){
+  state='over';document.exitPointerLock();
+  const rows=board();
+  showMenu(w<0?'DRAW':TEAM[w]+' TEAM WINS',`BLUE ${score[0]} – ${score[1]} RED`,'Play again',`<table><tr><th>Player<th>K<th>D</tr>${rows}</table>`);
+}
+showMenu('TEAM PLAY 5v5','BLUE (M4A1) vs RED (AK-47). Eliminate the enemy team to win the round – no respawns. First to 5 rounds wins. Empty slots are filled with bots. WASD move · Space jump · Shift walk · Mouse look · Click shoot · Right-click zoom · R reload · V third-person · Tab scoreboard','Play');
+$('go').onclick=()=>{
+  try{AC=AC||new AudioContext();AC.resume()}catch(x){}
+  CFG.diff=+$('df').value;if(state!=='play'&&state!=='paused')reset();
+  state='play';$('menu').style.display='none';canvas.requestPointerLock();canvas.focus();
+};
+document.addEventListener('pointerlockchange',()=>{
+  if(document.pointerLockElement!==canvas&&state==='play'){state='paused';showMenu('PAUSED','Click to resume','Resume')}
+});
+document.addEventListener('mousemove',e=>{
+  if((document.pointerLockElement===canvas||firing)&&state==='play'){
+    const k=.0022*cam.fov/1.25;P.yaw+=e.movementX*k;pitch=Math.max(-1.5,Math.min(1.5,pitch+e.movementY*k));
+  }
+});
+canvas.addEventListener('mousedown',e=>{if(e.button===2)aim=true;else firing=true});canvas.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('mouseup',e=>{if(e.button===2)aim=false;else firing=false});
+document.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='KeyR'&&reload<=0&&ammo<W[wi].mag)reload=W[wi].rel;if(e.code==='KeyV')tp=!tp;
+  if(['Space','Tab'].includes(e.code))e.preventDefault();
+});
+document.addEventListener('keyup',e=>{keys[e.code]=false});
+window.addEventListener('resize',()=>engine.resize());
+
+// gun viewmodel (M4A1)
+const gun=makeGun(0,cam,false);gun.position.set(.2,-.2,.5);gun.scaling.setAll(.8);
+const fl=BABYLON.MeshBuilder.CreateSphere('fl',{diameter:.16},scene);fl.parent=gun;fl.position.set(0,.02,.62);fl.material=emis(new C3(1,.8,.3));fl.isPickable=false;fl.isVisible=false;
+
+engine.runRenderLoop(()=>{
+  const dt=Math.min(engine.getDeltaTime()/1000,.05);
+  if(state==='play'){
+    if(rs==='live'){if((rt0-=dt)<=0)checkRound(alive(0)>alive(1)?0:alive(1)>alive(0)?1:-1)}else if((rtm-=dt)<=0)newRound();
+    updPlayer(dt);
+    for(const e of ents)if(e.bot)updBot(e,dt);
+    
+  }
+  {const ey=P.p.y+(P.alive?EYE:.4),cp=Math.cos(pitch),k=tp?3:0,o=tp?.4:0;cam.position.set(P.p.x-Math.sin(P.yaw)*cp*k+Math.cos(P.yaw)*o,Math.max(.4,ey+Math.sin(pitch)*k),P.p.z-Math.cos(P.yaw)*cp*k-Math.sin(P.yaw)*o)}
+  cam.rotation.set(pitch,P.yaw,0);
+  kick=Math.max(0,kick-dt*.5);flash-=dt;gun.position.z=.5-kick;const vis=P.alive&&!tp;gun.setEnabled(vis);fl.isVisible=flash>0&&vis;cam.fov+=((aim?.7:1.25)-cam.fov)*Math.min(1,dt*14);cam.layerMask=tp?0xFFFFFFFF:0x0FFFFFFF;P.root.position.copyFrom(P.p);P.root.rotation.y=P.yaw;
+  hud(dt);
+  scene.render();
+});
+
+// Handy hooks for integration / future multiplayer
+window.TDM={CFG,scene,engine,ents,reset};
+</script></body></html>

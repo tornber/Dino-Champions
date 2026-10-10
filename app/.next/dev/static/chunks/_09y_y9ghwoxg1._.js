@@ -1,0 +1,5 @@
+(globalThis["TURBOPACK_CHUNK_LISTS"] || (globalThis["TURBOPACK_CHUNK_LISTS"] = [])).push({
+    script: typeof document === "object" ? document.currentScript : undefined,
+    chunks: ["static/chunks/_1_iv8p00l_ruq._.css","static/chunks/node_modules_0mmcafrlcfxrs._.js","static/chunks/node_modules_next_dist_0jksdl9aljvup._.js","static/chunks/node_modules_14fg39rjs0s2t._.js","static/chunks/node_modules_0xpy_4jz69p5a._.js","static/chunks/node_modules_0ntyhv-zez7wo._.js","static/chunks/node_modules_@solana_web3_js_lib_index_browser_esm_163i6nppxrlmw.js","static/chunks/node_modules_pako_dist_pako_esm_mjs_0ghgpjxrv65jr._.js","static/chunks/node_modules_@coral-xyz_anchor_dist_browser_index_1dzg6jffyf0b-.js","static/chunks/node_modules_@solana_1-8937x7v73qx._.js","static/chunks/node_modules_@solana-mobile_wallet-standard-mobile_0sgpwfc6yddwn._.js","static/chunks/node_modules_1gk7qrp7ceo5a._.js","static/chunks/src_0-hjsgbhvahn9._.js","static/chunks/_1f0_na2nye3_n._.js","static/chunks/node_modules_@solflare-wallet_sdk_1jds3a3x74tqv._.js","static/chunks/node_modules_@solana_1yxetwzd_0ka3._.js"],
+    source: "entry"
+});

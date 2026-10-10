@@ -1,0 +1,1 @@
+Put dino_champions.json (from target/idl) in this folder.

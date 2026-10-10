@@ -1,0 +1,1290 @@
+{
+  "address": "9hvmbZQU8scDSykiHEwV2j6t4GqJLwEEcm86KYzPUBNn",
+  "metadata": {
+    "name": "dino_battle",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "cancel_competition",
+      "docs": [
+        "If the start time passed and there are fewer than 1 player, the",
+        "competition is cancelled (anyone can trigger it). Players then `refund`."
+      ],
+      "discriminator": [
+        62,
+        4,
+        198,
+        98,
+        200,
+        41,
+        255,
+        72
+      ],
+      "accounts": [
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          }
+        },
+        {
+          "name": "caller",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim",
+      "docs": [
+        "Winner claims the prize for their leaderboard rank. Non-winners can call it",
+        "too, just to close their participant account and recover the rent."
+      ],
+      "discriminator": [
+        62,
+        198,
+        214,
+        193,
+        213,
+        159,
+        108,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          }
+        },
+        {
+          "name": "participant",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_competition",
+      "docs": [
+        "Anyone can create a competition."
+      ],
+      "discriminator": [
+        110,
+        212,
+        234,
+        212,
+        118,
+        128,
+        158,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u64"
+        },
+        {
+          "name": "entry_fee",
+          "type": "u64"
+        },
+        {
+          "name": "start_time",
+          "type": "i64"
+        },
+        {
+          "name": "end_time",
+          "type": "i64"
+        },
+        {
+          "name": "max_players",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "finalize_competition",
+      "docs": [
+        "After the competition ends, lock results and compute the admin / website shares.",
+        "Anyone can call it after the final-score submission window closes."
+      ],
+      "discriminator": [
+        134,
+        233,
+        35,
+        138,
+        192,
+        181,
+        223,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          }
+        },
+        {
+          "name": "caller",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "One-time setup. Only the program's upgrade authority (the deployer) can call it."
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program",
+          "address": "9hvmbZQU8scDSykiHEwV2j6t4GqJLwEEcm86KYzPUBNn"
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "website_wallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "game_server",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "join_competition",
+      "docs": [
+        "Check balance, pay the entry fee, register as participant.",
+        "Only possible before the competition starts."
+      ],
+      "discriminator": [
+        9,
+        202,
+        251,
+        16,
+        34,
+        54,
+        85,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          }
+        },
+        {
+          "name": "participant",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "refund",
+      "docs": [
+        "Return the entry fee (and participant rent) of a cancelled competition."
+      ],
+      "discriminator": [
+        2,
+        96,
+        183,
+        251,
+        63,
+        208,
+        46,
+        46
+      ],
+      "accounts": [
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          }
+        },
+        {
+          "name": "participant",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "submit_final_score",
+      "docs": [
+        "Store a player's final browser-aggregated score after the game ends.",
+        "Re-submitting replaces the total, so retries cannot double-count it."
+      ],
+      "discriminator": [
+        84,
+        157,
+        93,
+        29,
+        215,
+        158,
+        63,
+        206
+      ],
+      "accounts": [
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          },
+          "relations": [
+            "participant"
+          ]
+        },
+        {
+          "name": "participant",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition"
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "participant"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "total_score",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "submit_score",
+      "docs": [
+        "Add a verified run score to the player's cumulative competition score.",
+        "Every successful call adds one run to the on-chain total."
+      ],
+      "discriminator": [
+        212,
+        128,
+        45,
+        22,
+        112,
+        82,
+        85,
+        235
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "game_server",
+          "signer": true
+        },
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          },
+          "relations": [
+            "participant"
+          ]
+        },
+        {
+          "name": "participant",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition"
+              },
+              {
+                "kind": "account",
+                "path": "participant.player",
+                "account": "Participant"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "score",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_config",
+      "docs": [
+        "Admin can rotate the website wallet / game server key."
+      ],
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "website_wallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "game_server",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_admin_share",
+      "docs": [
+        "Deployer/admin withdraws the 9% share of a finalized competition."
+      ],
+      "discriminator": [
+        172,
+        63,
+        220,
+        152,
+        121,
+        11,
+        210,
+        211
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw_website_share",
+      "docs": [
+        "Website wallet withdraws the 1% share of a finalized competition."
+      ],
+      "discriminator": [
+        243,
+        232,
+        141,
+        254,
+        102,
+        3,
+        91,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "website_wallet",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "competition",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  109,
+                  112,
+                  101,
+                  116,
+                  105,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "competition.creator",
+                "account": "Competition"
+              },
+              {
+                "kind": "account",
+                "path": "competition.id",
+                "account": "Competition"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Competition",
+      "discriminator": [
+        193,
+        49,
+        76,
+        118,
+        106,
+        22,
+        221,
+        106
+      ]
+    },
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Participant",
+      "discriminator": [
+        32,
+        142,
+        108,
+        79,
+        247,
+        179,
+        54,
+        6
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Not authorized"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidEntryFee",
+      "msg": "Entry fee must be greater than zero"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidTimes",
+      "msg": "Invalid start/end time"
+    },
+    {
+      "code": 6003,
+      "name": "MaxPlayersTooLow",
+      "msg": "max_players must be at least 1"
+    },
+    {
+      "code": 6004,
+      "name": "NotOpen",
+      "msg": "Competition is not open"
+    },
+    {
+      "code": 6005,
+      "name": "JoinClosed",
+      "msg": "Joining is closed, the competition already started"
+    },
+    {
+      "code": 6006,
+      "name": "CompetitionFull",
+      "msg": "Competition is full"
+    },
+    {
+      "code": 6007,
+      "name": "InsufficientBalance",
+      "msg": "Wallet balance is lower than the entry fee"
+    },
+    {
+      "code": 6008,
+      "name": "NotStartedYet",
+      "msg": "Competition has not started yet"
+    },
+    {
+      "code": 6009,
+      "name": "NotEndedYet",
+      "msg": "Competition has not ended yet"
+    },
+    {
+      "code": 6010,
+      "name": "ScoringClosed",
+      "msg": "Score submission window is closed"
+    },
+    {
+      "code": 6011,
+      "name": "NotEnoughPlayers",
+      "msg": "Fewer than 1 player joined"
+    },
+    {
+      "code": 6012,
+      "name": "EnoughPlayers",
+      "msg": "Enough players joined, cannot cancel"
+    },
+    {
+      "code": 6013,
+      "name": "NotCancelled",
+      "msg": "Competition is not cancelled"
+    },
+    {
+      "code": 6014,
+      "name": "NotFinalized",
+      "msg": "Competition is not finalized"
+    },
+    {
+      "code": 6015,
+      "name": "AlreadyWithdrawn",
+      "msg": "Share already withdrawn"
+    },
+    {
+      "code": 6016,
+      "name": "InsufficientEscrow",
+      "msg": "Escrow would fall below rent-exempt minimum"
+    },
+    {
+      "code": 6017,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6018,
+      "name": "MaxPlayersTooHigh",
+      "msg": "max_players must be at most 100"
+    },
+    {
+      "code": 6019,
+      "name": "DurationTooLong",
+      "msg": "Competition duration cannot exceed 60 minutes"
+    }
+  ],
+  "types": [
+    {
+      "name": "Competition",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "entry_fee",
+            "type": "u64"
+          },
+          {
+            "name": "start_time",
+            "type": "i64"
+          },
+          {
+            "name": "end_time",
+            "type": "i64"
+          },
+          {
+            "name": "max_players",
+            "type": "u32"
+          },
+          {
+            "name": "player_count",
+            "type": "u32"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "Status"
+              }
+            }
+          },
+          {
+            "name": "admin_share",
+            "type": "u64"
+          },
+          {
+            "name": "website_share",
+            "type": "u64"
+          },
+          {
+            "name": "admin_withdrawn",
+            "type": "bool"
+          },
+          {
+            "name": "website_withdrawn",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "leaderboard",
+            "docs": [
+              "Sorted best-first, at most 25 entries."
+            ],
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "Entry"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Program deployer: receives the 9% share, can rotate keys."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "website_wallet",
+            "docs": [
+              "Website account: receives the 1% share."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "game_server",
+            "docs": [
+              "Trusted backend key that submits verified scores."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Entry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "score",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Participant",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "competition",
+            "type": "pubkey"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "best_score",
+            "docs": [
+              "Sum of all verified run scores submitted during this competition."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Status",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Finalized"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    }
+  ]
+}

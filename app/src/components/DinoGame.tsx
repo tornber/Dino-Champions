@@ -711,7 +711,7 @@ export default function DinoGame({
         );
 
         setPhase((current) =>
-          current === "submitted" ? current : "ended",
+         current === "banned" ? current : "ended",
         );
 
         setMsg(
